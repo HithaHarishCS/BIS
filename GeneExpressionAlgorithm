@@ -1,0 +1,110 @@
+import numpy as np
+import random
+import math
+
+# Define the function set and terminal set
+FUNCTIONS = ['+', '-', '*', '/']
+TERMINALS = ['x']  # only one variable
+CONSTANTS = [str(i) for i in range(1, 5)]  # constants 1–4
+
+# Combine all symbols
+SYMBOLS = FUNCTIONS + TERMINALS + CONSTANTS
+
+HEAD_LENGTH = 5
+TAIL_LENGTH = HEAD_LENGTH * (len(FUNCTIONS) - 1) + 1
+CHROMOSOME_LENGTH = HEAD_LENGTH + TAIL_LENGTH
+
+POP_SIZE = 50
+GENERATIONS = 50
+MUTATION_RATE = 0.1
+
+# Target function
+def target_function(x):
+    return x**2 + x + 1
+
+# Generate dataset
+X = np.linspace(-10, 10, 100)
+Y = target_function(X)
+
+# Decode chromosome to expression (prefix notation → infix)
+def decode_chromosome(chrom):
+    stack = []
+
+    def is_function(gene):
+        return gene in FUNCTIONS
+
+    for gene in reversed(chrom):
+        if gene in TERMINALS or gene in CONSTANTS:
+            stack.append(gene)
+        elif is_function(gene) and len(stack) >= 2:
+            a = stack.pop()
+            b = stack.pop()
+            expr = f"({a} {gene} {b})"
+            stack.append(expr)
+        else:
+            continue  # skip invalid genes
+
+    return stack[0] if stack else "0"
+
+# Evaluate fitness: mean squared error
+def fitness(chrom):
+    expr = decode_chromosome(chrom)
+    try:
+        f = lambda x: eval(expr)
+        y_pred = np.array([f(x) for x in X])
+        mse = np.mean((y_pred - Y) ** 2)
+        return -mse  # Negative because we maximize fitness
+    except:
+        return -float('inf')  # Invalid expression
+
+# Initialize population
+def random_chromosome():
+    head = [random.choice(SYMBOLS) for _ in range(HEAD_LENGTH)]
+    tail = [random.choice(TERMINALS + CONSTANTS) for _ in range(TAIL_LENGTH)]
+    return head + tail
+
+# Mutation operator
+def mutate(chrom):
+    new_chrom = chrom[:]
+    for i in range(len(chrom)):
+        if random.random() < MUTATION_RATE:
+            if i < HEAD_LENGTH:
+                new_chrom[i] = random.choice(SYMBOLS)
+            else:
+                new_chrom[i] = random.choice(TERMINALS + CONSTANTS)
+    return new_chrom
+
+# Tournament selection
+def select(population):
+    k = 3
+    selected = random.sample(population, k)
+    selected.sort(key=lambda chrom: fitness(chrom), reverse=True)
+    return selected[0]
+
+# Main evolutionary loop
+def gep():
+    population = [random_chromosome() for _ in range(POP_SIZE)]
+
+    for gen in range(GENERATIONS):
+        population.sort(key=lambda chrom: fitness(chrom), reverse=True)
+        best = population[0]
+        best_expr = decode_chromosome(best)
+        print(f"Generation {gen+1}: Best Fitness = {fitness(best):.4f} | Expression = {best_expr}")
+
+        new_population = [best]  # Elitism
+
+        while len(new_population) < POP_SIZE:
+            parent = select(population)
+            child = mutate(parent)
+            new_population.append(child)
+
+        population = new_population
+
+    # Final result
+    best = population[0]
+    return decode_chromosome(best), fitness(best)
+
+# Run GEP
+best_expr, best_fit = gep()
+print(f"\nBest evolved expression: {best_expr}")
+print(f"Fitness (MSE): {-best_fit:.4f}")
