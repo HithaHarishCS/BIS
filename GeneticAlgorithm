@@ -1,0 +1,80 @@
+import random
+
+# Fitness function: maximizing f(x) = x^2
+def fitness(x):
+    return x ** 2
+
+# Selection: tournament selection
+def select(population):
+    tournament_size = 3
+    selected = random.sample(population, tournament_size)
+    selected = sorted(selected, key=fitness, reverse=True)
+    return selected[0]
+
+# Crossover (Single-point crossover)
+def crossover(parent1, parent2):
+    crossover_point = random.randint(0, len(parent1) - 1)
+    child1 = parent1[:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+    return child1, child2
+
+# Mutation (Flip a bit)
+def mutate(child, mutation_rate):
+    return ''.join([str(1 - int(bit)) if random.random() < mutation_rate else bit for bit in child])
+
+# Convert binary string to integer
+def decode(binary_string):
+    return int(binary_string, 2)
+
+# Main genetic algorithm
+def genetic_algorithm(pop_size, generations, mutation_rate, gene_length):
+    # Initialize population
+    population = [''.join(random.choices('01', k=gene_length)) for _ in range(pop_size)]
+    
+    for generation in range(generations):
+        print(f"Generation {generation + 1}:")
+        
+        # Evaluate fitness for the entire population
+        population_fitness = [(individual, fitness(decode(individual))) for individual in population]
+        population_fitness = sorted(population_fitness, key=lambda x: x[1], reverse=True)
+        
+        # Print the best solution in the population
+        best_individual, best_fitness = population_fitness[0]
+        print(f"Best solution: {best_individual} -> {decode(best_individual)}^2 = {best_fitness}")
+        
+        # Create new population
+        new_population = []
+        
+        # Elitism: retain the best individual
+        new_population.append(population_fitness[0][0])
+        
+        # Create offspring via selection, crossover, and mutation
+        while len(new_population) < pop_size:
+            parent1 = select(population)
+            parent2 = select(population)
+            
+            # Crossover to produce children
+            child1, child2 = crossover(parent1, parent2)
+            
+            # Mutate the children
+            child1 = mutate(child1, mutation_rate)
+            child2 = mutate(child2, mutation_rate)
+            
+            # Add children to the new population
+            new_population.extend([child1, child2])
+        
+        # Replace population with the new population
+        population = new_population[:pop_size]
+    
+    return population_fitness[0]
+
+# Parameters
+pop_size = 10        # Population size
+generations = 20     # Number of generations
+mutation_rate = 0.01 # Mutation rate
+gene_length = 10     # Length of binary string (representing the gene)
+
+# Run genetic algorithm
+best_solution = genetic_algorithm(pop_size, generations, mutation_rate, gene_length)
+print(f"Best solution found: {best_solution[0]} -> {decode(best_solution[0])}^2 = {best_solution[1]}")
+
