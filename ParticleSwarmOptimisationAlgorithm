@@ -1,0 +1,62 @@
+import numpy as np
+
+# === 1. Define the objective function ===
+def objective_function(position):
+    x, y = position
+    return x**2 + y**2  # Minimize x^2 + y^2
+
+# === 2. Parameters ===
+NUM_PARTICLES = 30
+NUM_DIMENSIONS = 2
+MAX_ITER = 20
+
+w = 0.5       # Inertia weight
+c1 = 1.5      # Cognitive (particle) coefficient
+c2 = 1.5      # Social (swarm) coefficient
+
+# === 3. Initialize particles ===
+class Particle:
+    def __init__(self):
+        self.position = np.random.uniform(-10, 10, NUM_DIMENSIONS)
+        self.velocity = np.random.uniform(-1, 1, NUM_DIMENSIONS)
+        self.best_position = self.position.copy()
+        self.best_fitness = objective_function(self.position)
+
+# Initialize swarm
+swarm = [Particle() for _ in range(NUM_PARTICLES)]
+global_best_position = min(swarm, key=lambda p: p.best_fitness).best_position.copy()
+global_best_fitness = objective_function(global_best_position)
+
+# === 4–6. Main PSO loop ===
+for iteration in range(MAX_ITER):
+    for particle in swarm:
+        # Evaluate current fitness
+        fitness = objective_function(particle.position)
+
+        # Update personal best
+        if fitness < particle.best_fitness:
+            particle.best_fitness = fitness
+            particle.best_position = particle.position.copy()
+
+        # Update global best
+        if fitness < global_best_fitness:
+            global_best_fitness = fitness
+            global_best_position = particle.position.copy()
+
+    for particle in swarm:
+        # Update velocity
+        r1 = np.random.rand(NUM_DIMENSIONS)
+        r2 = np.random.rand(NUM_DIMENSIONS)
+        cognitive = c1 * r1 * (particle.best_position - particle.position)
+        social = c2 * r2 * (global_best_position - particle.position)
+        particle.velocity = w * particle.velocity + cognitive + social
+
+        # Update position
+        particle.position += particle.velocity
+
+    print(f"Iteration {iteration + 1} | Best Fitness: {global_best_fitness:.6f} | Best Position: {global_best_position}")
+
+# === 7. Output the best solution ===
+print("\n--- Optimization Complete ---")
+print(f"Best Position Found: {global_best_position}")
+print(f"Best Fitness Achieved: {global_best_fitness:.6f}")
