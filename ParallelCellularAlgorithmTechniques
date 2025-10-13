@@ -1,0 +1,32 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def noise_filter_smoothing(image, iterations=1):
+    padded_img = np.pad(image, pad_width=1, mode='edge')
+    rows, cols = image.shape
+    for _ in range(iterations):
+        new_img = np.zeros_like(image)
+        for i in range(rows):
+            for j in range(cols):
+                neighborhood = padded_img[i:i+3, j:j+3]
+                new_img[i, j] = neighborhood.mean()
+        padded_img[1:-1, 1:-1] = new_img
+    return new_img
+
+# Example usage
+if __name__ == "__main__":
+    np.random.seed(42)
+    original = np.ones((10, 10)) * 128  # smaller for display
+    noise = np.random.randint(-30, 30, size=(10, 10))
+    noisy_image = np.clip(original + noise, 0, 255).astype(np.uint8)
+
+    smoothed_image = noise_filter_smoothing(noisy_image, iterations=5)
+
+    # Print the matrices
+    np.set_printoptions(precision=1, suppress=True)
+    print("Original Image (pixel values):")
+    print(original)
+    print("\nNoisy Image (pixel values):")
+    print(noisy_image)
+    print("\nSmoothed Image (pixel values):")
+    print(smoothed_image)
